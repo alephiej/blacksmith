@@ -12,7 +12,7 @@ TEMPLATE = u'module.spec.j2'
 PATTERN = Environment(loader=PackageLoader('blacksmith', 'templates')).get_template(TEMPLATE)
 RPMBUILD = string.Template('''rpmbuild --define "_topdir $builddir" \
 --define "_builddir %{_topdir}" \
---define "_rpmdir %{_topdir}/rpms" \
+--define "_rpmdir $targetdir" \
 --define "_srcrpmdir %{_rpmdir}" \
 --define "_sourcedir %{_topdir}" \
 -ba $specfile''')
@@ -56,14 +56,15 @@ class PuppetModule(dict):
     self.get_base_dir_from_tarball()
     open(destination, 'w').write(self.render_spec())
 
-  def generate_rpmbuild_command(self, builddir, specfile, template=RPMBUILD):
-    return template.substitute(builddir=builddir, specfile=specfile)
+  def generate_rpmbuild_command(self, builddir, targetdir, specfile, template=RPMBUILD):
+    return template.substitute(builddir=builddir, targetdir=targetdir, specfile=specfile)
 
   def build_rpm(self, anvil=ANVIL):
     builddir = os.path.join(anvil, self.full_name)
-    verify_directory(os.path.join(builddir, 'rpms'))
+    targetdir = os.path.join(anvil, 'rpms')
+    verify_directory(targetdir)
     specfile = os.path.join(anvil, self.specfile())
-    command = self.generate_rpmbuild_command(builddir, specfile)
+    command = self.generate_rpmbuild_command(builddir, targetdir, specfile)
     print command
     build = subprocess.call(command, shell=True)
 
